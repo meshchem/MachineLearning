@@ -23,10 +23,10 @@ torch.manual_seed(0)
 
 
 # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
-with open('simple_addition_dataset.txt', 'r', encoding='utf-8') as f:
+with open('simple_subtraction_dataset.txt', 'r', encoding='utf-8') as f:
     text = f.read()
 
-with open('simple_addition_dataset.txt') as f:
+with open('simple_subtraction_dataset.txt') as f:
     lines = f.readlines()
 
 lines = list(lines)
@@ -259,43 +259,58 @@ def random_math_tests(model, n_tests=10, max_digit=9, max_new_tokens=3):
         a = random.randint(0, max_digit)
         b = random.randint(0, max_digit)
 
-        prompt = f"{a}+{b}="
-        target = str(a + b)
+        prompt = f"{a}-{b}="
+        target = str(a - b)
         pred = generate_answer(model, prompt, max_new_tokens=max_new_tokens)
 
         print(f"{prompt} {pred} (target: {target})")
 
-def has_carry(a, b):
-    return a + b >= 10
+def random_subtraction_tests(model, n_tests=10, max_digit=9, max_new_tokens=2):
+    model.eval()
 
-def evaluate_carry_accuracy(model, test_lines, max_new_tokens=3):
-    carry_correct = 0
-    carry_total = 0
-    nocarry_correct = 0
-    nocarry_total = 0
+    for _ in range(n_tests):
+        a = random.randint(0, max_digit)
+        b = random.randint(0, a)  # enforce non-negative subtraction
 
-    for line in test_lines:
-        prompt, target = parse_expression(line)
+        prompt = f"{a}-{b}="
+        target = str(a - b)
 
-        # extract operands
-        a, b = map(int, prompt[:-1].split("+"))
-
-        # model prediction
         pred = generate_answer(model, prompt, max_new_tokens=max_new_tokens)
 
-        if has_carry(a, b):
-            carry_total += 1
-            if pred == target:
-                carry_correct += 1
-        else:
-            nocarry_total += 1
-            if pred == target:
-                nocarry_correct += 1
+        status = "✓" if pred == target else "✗"
+        print(f"{prompt} {pred} (target: {target}) {status}")
 
-    carry_acc = carry_correct / carry_total if carry_total > 0 else 0.0
-    nocarry_acc = nocarry_correct / nocarry_total if nocarry_total > 0 else 0.0
+# def has_carry(a, b):
+#     return a + b >= 10
 
-    return carry_acc, nocarry_acc
+# def evaluate_carry_accuracy(model, test_lines, max_new_tokens=3):
+#     carry_correct = 0
+#     carry_total = 0
+#     nocarry_correct = 0
+#     nocarry_total = 0
+
+#     for line in test_lines:
+#         prompt, target = parse_expression(line)
+
+#         # extract operands
+#         a, b = map(int, prompt[:-1].split("+"))
+
+#         # model prediction
+#         pred = generate_answer(model, prompt, max_new_tokens=max_new_tokens)
+
+#         if has_carry(a, b):
+#             carry_total += 1
+#             if pred == target:
+#                 carry_correct += 1
+#         else:
+#             nocarry_total += 1
+#             if pred == target:
+#                 nocarry_correct += 1
+
+#     carry_acc = carry_correct / carry_total if carry_total > 0 else 0.0
+#     nocarry_acc = nocarry_correct / nocarry_total if nocarry_total > 0 else 0.0
+
+#     return carry_acc, nocarry_acc
 
 
 model = GPTLanguageModel()
@@ -328,12 +343,17 @@ test_acc = evaluate_accuracy(m, test_lines)
 print(f"Train accuracy: {train_acc:.3f}")
 print(f"Test accuracy:  {test_acc:.3f}")
 
-random_math_tests(m)
+# random_math_tests(m)
+random_subtraction_tests(m)
 
-carry_acc, nocarry_acc = evaluate_carry_accuracy(m, test_lines)
+# carry_acc, nocarry_acc = evaluate_carry_accuracy(m, test_lines)
+# print(f"Carry accuracy:     {carry_acc:.3f}")
+# print(f"No-carry accuracy:  {nocarry_acc:.3f}")
 
-print(f"Carry accuracy:     {carry_acc:.3f}")
-print(f"No-carry accuracy:  {nocarry_acc:.3f}")
+# torch.save(
+#     m.state_dict(),
+#     "model_weights_simple_addition.pth"
+# )
 
 # generate from the model
 # context = torch.zeros((1, 1), dtype=torch.long, device=device)

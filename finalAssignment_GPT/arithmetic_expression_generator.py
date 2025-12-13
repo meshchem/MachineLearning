@@ -18,6 +18,24 @@ def single_digit_addition(min_val=0, max_val=10):
     result = add(a, b)
     return expr, result
 
+def simple_subtraction(min_val=0, max_val=10):
+    a = random.randint(min_val, max_val)
+    b = random.randint(min_val, a)
+    sub = OPS['-']
+    # avoid division by zero
+    expr = f"{a}-{b}"
+    result = sub(a, b)
+    return expr, result
+
+def subtraction(min_val=0, max_val=10):
+    a = random.randint(min_val, max_val)
+    b = random.randint(min_val, max_val)
+    sub = OPS['-']
+    # avoid division by zero
+    expr = f"{a}-{b}"
+    result = sub(a, b)
+    return expr, result
+
 def random_simple_expr(min_val=0, max_val=100):
     a = random.randint(min_val, max_val)
     b = random.randint(min_val, max_val)
@@ -63,11 +81,15 @@ def random_parenthesized_expr(min_val=0, max_val=20):
 
 
 
-def generate_dataset(n_simple=10000, n_paren=2000, path="simple_addition_dataset.csv"):
+def generate_dataset(n_simple=10000, n_paren=2000, path="simple_subtraction_dataset.csv"):
     rows = []
 
+    # for _ in range(n_simple):
+    #     expr, res = single_digit_addition()
+    #     rows.append(f"{expr}={(res)}")
+
     for _ in range(n_simple):
-        expr, res = single_digit_addition()
+        expr, res = simple_subtraction()
         rows.append(f"{expr}={(res)}")
 
 
