@@ -1,0 +1,23 @@
+# ---- Python ----
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ---- macOS ----
+.DS_Store
+
+# ---- Jupyter / ML ----
+.ipynb_checkpoints/
+
+# ---- IDEs ----
+.vscode/
+.idea/
+
+# ---- Data / outputs (optional) ----
+*.csv
+*.log
+
+# ---- Archives ----
+*.zip
