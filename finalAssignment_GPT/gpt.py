@@ -6,12 +6,12 @@ import random
 # hyperparameters
 batch_size = 16 # how many independent sequences will we process in parallel?
 block_size = 10 # what is the maximum context length for predictions?
-max_iters = 4000
+max_iters = 5000
 eval_interval = 200
 learning_rate = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
-n_embd = 64
+n_embd = 128
 n_head = 2
 n_layer = 3
 dropout = 0.0
@@ -265,6 +265,38 @@ def random_math_tests(model, n_tests=10, max_digit=9, max_new_tokens=3):
 
         print(f"{prompt} {pred} (target: {target})")
 
+def has_carry(a, b):
+    return a + b >= 10
+
+def evaluate_carry_accuracy(model, test_lines, max_new_tokens=3):
+    carry_correct = 0
+    carry_total = 0
+    nocarry_correct = 0
+    nocarry_total = 0
+
+    for line in test_lines:
+        prompt, target = parse_expression(line)
+
+        # extract operands
+        a, b = map(int, prompt[:-1].split("+"))
+
+        # model prediction
+        pred = generate_answer(model, prompt, max_new_tokens=max_new_tokens)
+
+        if has_carry(a, b):
+            carry_total += 1
+            if pred == target:
+                carry_correct += 1
+        else:
+            nocarry_total += 1
+            if pred == target:
+                nocarry_correct += 1
+
+    carry_acc = carry_correct / carry_total if carry_total > 0 else 0.0
+    nocarry_acc = nocarry_correct / nocarry_total if nocarry_total > 0 else 0.0
+
+    return carry_acc, nocarry_acc
+
 
 model = GPTLanguageModel()
 m = model.to(device)
@@ -297,6 +329,11 @@ print(f"Train accuracy: {train_acc:.3f}")
 print(f"Test accuracy:  {test_acc:.3f}")
 
 random_math_tests(m)
+
+carry_acc, nocarry_acc = evaluate_carry_accuracy(m, test_lines)
+
+print(f"Carry accuracy:     {carry_acc:.3f}")
+print(f"No-carry accuracy:  {nocarry_acc:.3f}")
 
 # generate from the model
 # context = torch.zeros((1, 1), dtype=torch.long, device=device)

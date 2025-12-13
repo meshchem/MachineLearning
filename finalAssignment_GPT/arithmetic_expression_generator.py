@@ -63,7 +63,7 @@ def random_parenthesized_expr(min_val=0, max_val=20):
 
 
 
-def generate_dataset(n_simple=5000, n_paren=2000, path="simple_addition_dataset.csv"):
+def generate_dataset(n_simple=10000, n_paren=2000, path="simple_addition_dataset.csv"):
     rows = []
 
     for _ in range(n_simple):
