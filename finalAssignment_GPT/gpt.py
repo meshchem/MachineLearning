@@ -13,8 +13,8 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embd = 64
 n_head = 2
-n_layer = 2
-dropout = 0.1
+n_layer = 3
+dropout = 0.0
 # ------------
 
 # torch.manual_seed(1337)
@@ -213,14 +213,23 @@ class GPTLanguageModel(nn.Module):
 def generate_answer(model, prompt, max_new_tokens=5):
     model.eval()
 
-    # Encode the prompt (e.g. "8+9=")
     idx = torch.tensor([encode(prompt)], dtype=torch.long).to(device)
-    # Generate tokens
     out = model.generate(idx, max_new_tokens=max_new_tokens)
-    # Decode full output
     decoded = decode(out[0].tolist())
-    # Return only the generated part
-    return decoded[len(prompt):]
+
+    # Get only the generated part
+    answer = decoded[len(prompt):]
+
+    # Keep only leading digits
+    cleaned = ""
+    for c in answer:
+        if c.isdigit():
+            cleaned += c
+        else:
+            break
+
+    return cleaned
+
 
 def parse_expression(line):
     line = line.strip()
@@ -288,20 +297,6 @@ print(f"Train accuracy: {train_acc:.3f}")
 print(f"Test accuracy:  {test_acc:.3f}")
 
 random_math_tests(m)
-
-
-
-# print('\n')
-# print(generate_answer(m, "8+9=", max_new_tokens=3))
-# print(generate_answer(m, "6+2=", max_new_tokens=3))
-# print(generate_answer(m, "7+3=", max_new_tokens=3))
-# print(generate_answer(m, "5+1=", max_new_tokens=3))
-# print(generate_answer(m, "1+1=", max_new_tokens=3))
-# print(generate_answer(m, "4+3=", max_new_tokens=3))
-# print(generate_answer(m, "2+8=", max_new_tokens=3))
-# print(generate_answer(m, "8+7=", max_new_tokens=3))
-# print(generate_answer(m, "5+9=", max_new_tokens=3))
-# print(generate_answer(m, "6+7=", max_new_tokens=3))
 
 # generate from the model
 # context = torch.zeros((1, 1), dtype=torch.long, device=device)
