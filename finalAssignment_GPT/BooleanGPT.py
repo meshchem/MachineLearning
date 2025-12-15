@@ -6,7 +6,7 @@ import random
 # hyperparameters
 batch_size = 16 # how many independent sequences will we process in parallel?
 block_size = 6 # what is the maximum context length for predictions?
-max_iters = 5000
+max_iters = 2000
 eval_interval = 200
 learning_rate = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -20,10 +20,10 @@ dropout = 0.0
 torch.manual_seed(1337)
 
 # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
-with open('binary_and_boolean_dataset.txt', 'r', encoding='utf-8') as f:
+with open('linguistic_boolean_dataset.txt', 'r', encoding='utf-8') as f:
     text = f.read()
 
-with open('binary_and_boolean_dataset.txt') as f:
+with open('linguistic_boolean_dataset.txt') as f:
     lines = f.readlines()
 
 lines = list(lines)
@@ -209,12 +209,12 @@ class GPTLanguageModel(nn.Module):
 # Accuracy 
 def parse_expression(line):
     line = line.strip()
-    lhs, rhs = line.split("=")
-    prompt = lhs + "="
+    lhs, rhs = line.split("IS")
+    prompt = lhs + "IS"
     target = rhs
     return prompt, target
 
-def evaluate_accuracy(model, dataset_lines, max_new_tokens=1):
+def evaluate_accuracy(model, dataset_lines, max_new_tokens=5):
     correct = 0
     total = 0
 
@@ -228,7 +228,26 @@ def evaluate_accuracy(model, dataset_lines, max_new_tokens=1):
 
     return correct / total
 
-# model answer to prompt
+# # model answer to prompt
+# def generate_answer(model, prompt, max_new_tokens=1):
+#     model.eval()
+
+#     idx = torch.tensor([encode(prompt)], dtype=torch.long).to(device)
+#     out = model.generate(idx, max_new_tokens=max_new_tokens)
+#     decoded = decode(out[0].tolist())
+
+#     # Get only the generated part
+#     answer = decoded[len(prompt):]
+
+#     # Keep only leading digits
+#     cleaned = ""
+#     for c in answer:
+#         if c.isdigit():
+#             cleaned += c
+#         else:
+#             break
+
+#     return cleaned
 def generate_answer(model, prompt, max_new_tokens=1):
     model.eval()
 
@@ -237,17 +256,18 @@ def generate_answer(model, prompt, max_new_tokens=1):
     decoded = decode(out[0].tolist())
 
     # Get only the generated part
-    answer = decoded[len(prompt):]
+    answer = decoded[len(prompt):].strip().upper()
 
-    # Keep only leading digits
-    cleaned = ""
-    for c in answer:
-        if c.isdigit():
-            cleaned += c
-        else:
-            break
+    # Normalize output
+    if answer.startswith("TRUE"):
+        return "TRUE"
+    if answer.startswith("FALSE"):
+        return "FALSE"
 
-    return cleaned
+    return answer.split()[0]  # fallback
+
+def bool_to_word(x):
+    return "TRUE" if x == 1 else "FALSE"
     
 # Boolean prompt generation
 def AND_prompts(model, n_tests=10):
@@ -255,8 +275,10 @@ def AND_prompts(model, n_tests=10):
     for _ in range(n_tests):
         a = random.randint(0, 1)
         b = random.randint(0, 1)
-        prompt = f"{a}&{b}="
-        target = str(a & b)
+        # prompt = f"{a}&{b}="
+        # target = str(a & b)
+        prompt = f"{bool_to_word(a)} AND {bool_to_word(b)} IS "
+        target = bool_to_word(a & b)
         pred = generate_answer(model, prompt, max_new_tokens=1)
         print(f"{prompt} {pred} (target: {target})")
 
@@ -265,8 +287,10 @@ def OR_prompts(model, n_tests=10):
     for _ in range(n_tests):
         a = random.randint(0, 1)
         b = random.randint(0, 1)
-        prompt = f"{a}|{b}="
-        target = str(a | b)
+        # prompt = f"{a}|{b}="
+        # target = str(a | b)
+        prompt = f"{bool_to_word(a)} OR {bool_to_word(b)} IS "
+        target = bool_to_word(a | b)
         pred = generate_answer(model, prompt, max_new_tokens=1)
         print(f"{prompt} {pred} (target: {target})")
 
@@ -276,7 +300,8 @@ m = model.to(device)
 print(sum(p.numel() for p in m.parameters())/1e6, 'M parameters')
 
 # create a PyTorch optimizer
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
+
 
 for iter in range(max_iters):
 
@@ -300,7 +325,7 @@ print(f"Train accuracy: {train_acc:.3f}")
 print(f"Test accuracy:  {test_acc:.3f}")
 
 AND_prompts(m)
-# OR_prompts(m)
+OR_prompts(m)
 
 # generate from the model
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
